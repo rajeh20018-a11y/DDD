@@ -1,4 +1,5 @@
 const qs=(s)=>document.querySelector(s), qsa=(s)=>document.querySelectorAll(s);
+qsa('input[name="email"]').forEach(input=>input.closest('label,.field')?.remove());
 const API_BASE=location.port==='5500'?'http://127.0.0.1:8772':'';
 // ثلاثة أنواع مصوّرة خاصة بكل خدمة.
 const serviceTypes={
