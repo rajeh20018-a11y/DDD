@@ -1,0 +1,11 @@
+const details={
+'tours-360':[['تراث','جولة رجال ألمع','قصور وممرات تاريخية'],['طبيعة','جولة السودة','غابات وإطلالات جبلية'],['مغامرة','جولة الحبلة','منحدرات ومسارات ساحرة']],
+'ai-assistant':[['اقتراحات','دليل الوجهات','أماكن تناسب اهتماماتك'],['إقامة','دليل الفنادق','خيارات قريبة من مسارك'],['برنامج','المخطط الذكي','جدول يومي سريع']],
+'trip-planner':[['ثقافة','رحلة تراثية','قرى ومتاحف وحكايات'],['استرخاء','رحلة طبيعية','جبال وغابات وإطلالات'],['نشاط','رحلة مغامرات','مسارات وتجارب محلية']],
+hotels:[['تراث','نُزل ريفية','إقامة بطابع عسيري'],['رفاهية','منتجعات جبلية','إطلالات وخدمات متكاملة'],['مدينة','فنادق أبها','قريبة من الخدمات']],
+destinations:[['تاريخ','وجهات تراثية','قرى وقصور ومتاحف'],['طبيعة','وجهات طبيعية','جبال وغابات وأودية'],['ترفيه','أماكن عائلية','ممشى وبحيرات وأنشطة']],
+restaurants:[['محلي','مطاعم شعبية','مذاقات جنوبية أصيلة'],['قهوة','مقاهٍ جبلية','جلسات وإطلالات هادئة'],['عائلي','مطاعم عائلية','خيارات تناسب الجميع']],
+events:[['ثقافة','مهرجانات تراثية','عروض وفنون محلية'],['حركة','تجارب مغامرة','مشي وتسلق واستكشاف'],['تذوق','تجارب محلية','أسواق ومنتجات المنطقة']]};
+const query=new URLSearchParams(location.search),item=details[query.get('service')]?.[Number(query.get('item'))];
+if(item){document.querySelector('#detailCategory').textContent=item[0];document.querySelector('#detailTitle').textContent=item[1];document.querySelector('#detailDescription').textContent=item[2];document.title=item[1]+' | AsirX';}
+const nav=document.createElement('nav');nav.className='connected-nav';nav.innerHTML='<a href="/index.html">الرئيسية</a><a href="/tours-360.html">جولات 360°</a><a href="/ai-assistant.html">المساعد الذكي</a><a href="/trip-planner.html">التخطيط</a><a href="/hotels.html">الفنادق</a><a href="/destinations.html">الوجهات</a><a href="/restaurants.html">المطاعم</a><a href="/events.html">الفعاليات</a><a href="/interest.html">سجّل اهتمامك</a>';document.querySelector('header')?.after(nav);
