@@ -9,7 +9,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
-from database import get_places, create_plan, save_message, save_interest, get_interests, init_db
+from database import (get_places, create_plan, save_message, save_interest,
+                      get_interests, delete_interest, track_event, get_analytics, init_db)
 
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATES_DIR = BASE_DIR / "templates"
@@ -120,16 +121,22 @@ class AppHandler(BaseHTTPRequestHandler):
             if not self.admin_allowed():
                 return self.send_data({"error": "غير مصرح"}, 401)
             rows = get_interests()
-            cards = "".join(f"<tr><td>{r['id']}</td><td>{html.escape(r['name'])}</td><td>{html.escape(r['phone'])}</td><td>{html.escape(r['city'])}</td><td>{html.escape(r['experience'])}</td><td>{r['created_at']}</td></tr>" for r in rows)
-            html = f'''<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><title>العملاء المهتمون</title><style>body{{font-family:Arial;padding:30px}}table{{width:100%;border-collapse:collapse}}td,th{{padding:10px;border:1px solid #ddd}}a{{display:inline-block;margin-bottom:20px}}</style><h1>العملاء المهتمون ({len(rows)})</h1><a href="/admin/interests.csv?key={self.admin_key()}">تصدير إلى Excel (CSV)</a><table><tr><th>#</th><th>الاسم</th><th>الجوال</th><th>المدينة</th><th>التجربة</th><th>التاريخ</th></tr>{cards}</table></html>'''
-            return self.send_data(html.encode("utf-8"), content_type="text/html; charset=utf-8")
+            key = html.escape(self.admin_key(), quote=True)
+            stats = {}
+            for row in rows: stats[row["experience"]] = stats.get(row["experience"], 0) + 1
+            cards = "".join(f'''<tr data-service="{html.escape(r['experience'], quote=True)}"><td>{html.escape(r['name'])}</td><td>{html.escape(r['phone'])}</td><td>{html.escape(r['city'])}</td><td>{html.escape(r['experience'])}</td><td>{html.escape(r['destination'])}</td><td>{html.escape(r['travel_date'] or '-')}</td><td>{r['created_at']}</td><td><button onclick="removeRow({r['id']},this)">حذف</button></td></tr>''' for r in rows)
+            options = "".join(f'<option>{html.escape(name)}</option>' for name in sorted(stats))
+            counts = "".join(f'<span>{html.escape(name)}: <b>{count}</b></span>' for name,count in stats.items())
+            analytics = "".join(f'<span>{html.escape(x["event"])}: <b>{x["count"]}</b></span>' for x in get_analytics())
+            page = f'''<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>لوحة المهتمين | AsirX</title><style>body{{font-family:Arial;background:#f5f0e6;color:#18352d;margin:0;padding:28px}}h1{{margin-bottom:6px}}.tools,.stats{{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}}input,select,a,button,.stats span{{padding:10px;border:1px solid #d7d1c8;background:#fff;color:inherit}}a{{text-decoration:none}}table{{width:100%;border-collapse:collapse;background:#fff}}td,th{{padding:10px;border:1px solid #ddd;text-align:right}}button{{cursor:pointer;color:#922e25}}@media(max-width:800px){{.table{{overflow:auto}}table{{min-width:850px}}}}</style><h1>لوحة المهتمين</h1><p>إجمالي السجلات: <b>{len(rows)}</b></p><div class="stats">{counts or '<span>لا توجد بيانات بعد</span>'}</div><div class="stats">{analytics or '<span>لا توجد أحداث تتبع بعد</span>'}</div><div class="tools"><input id="search" placeholder="ابحث بالاسم أو الجوال"><select id="service"><option value="">كل الخدمات</option>{options}</select><a href="/admin/interests.csv?key={key}">تصدير CSV</a></div><div class="table"><table><thead><tr><th>الاسم</th><th>الجوال</th><th>المدينة</th><th>الخدمة</th><th>الوجهة</th><th>موعد السفر</th><th>التاريخ</th><th></th></tr></thead><tbody>{cards}</tbody></table></div><script>const key={json.dumps(self.admin_key())};const search=document.querySelector('#search'),service=document.querySelector('#service');function filter(){{document.querySelectorAll('tbody tr').forEach(r=>r.hidden=!r.textContent.includes(search.value)||service.value&&r.dataset.service!==service.value)}}search.oninput=filter;service.onchange=filter;async function removeRow(id,button){{if(!confirm('حذف هذا السجل التجريبي؟'))return;const r=await fetch('/api/admin/interests/'+id+'?key='+encodeURIComponent(key),{{method:'DELETE'}});if(r.ok)button.closest('tr').remove();else alert('تعذر الحذف')}};</script></html>'''
+            return self.send_data(page.encode("utf-8"), content_type="text/html; charset=utf-8")
         if path == "/admin/interests.csv":
             if not self.admin_allowed():
                 return self.send_data({"error": "غير مصرح"}, 401)
             rows = get_interests()
             output = io.StringIO(); writer = csv.writer(output)
-            writer.writerow(["الرقم", "الاسم", "الجوال", "البريد", "المدينة", "الوجهة", "التجربة", "موعد السفر", "المسافرون", "موافقة التسويق", "تاريخ التسجيل"])
-            for r in rows: writer.writerow([r["id"],r["name"],r["phone"],r["email"],r["city"],r["destination"],r["experience"],r["travel_date"],r["travelers"],r["marketing_consent"],r["created_at"]])
+            writer.writerow(["الرقم", "الاسم", "الجوال", "البريد", "المدينة", "الوجهة", "الخدمة", "موعد السفر", "المسافرون", "الميزانية", "الملاحظات", "موافقة التسويق", "تاريخ التسجيل"])
+            for r in rows: writer.writerow([r["id"],r["name"],r["phone"],r["email"],r["city"],r["destination"],r["experience"],r["travel_date"],r["travelers"],r.get("budget",""),r.get("notes",""),r["marketing_consent"],r["created_at"]])
             data = ('\ufeff' + output.getvalue()).encode('utf-8')
             self.send_response(200); self.send_header("Content-Type", "text/csv; charset=utf-8"); self.send_header("Content-Disposition", "attachment; filename=asirx-interests.csv"); self.send_header("Content-Length", str(len(data))); self.end_headers(); return self.wfile.write(data)
         if path.startswith("/static/"):
@@ -154,10 +161,24 @@ class AppHandler(BaseHTTPRequestHandler):
                 return self.send_data({"message": "وصلت رسالتك، سنتواصل معك قريبًا."}, 201)
             if path == "/api/interests":
                 interest_id = save_interest(payload)
+                track_event("interest_form_complete", payload.get("path", ""))
                 return self.send_data({"id": interest_id, "message": "شكرًا لتسجيل اهتمامك 🌿 تم استلام بياناتك وسنتواصل معك عند إطلاق التجربة والعروض المناسبة."}, 201)
+            if path == "/api/analytics":
+                track_event(payload.get("event", ""), payload.get("path", ""))
+                return self.send_data({"ok": True}, 201)
         except (ValueError, json.JSONDecodeError) as exc:
             return self.send_data({"error": "بيانات الطلب غير صالحة", "detail": str(exc)}, 400)
         self.send_data({"error": "المسار غير موجود"}, 404)
+
+    def do_DELETE(self):
+        path = urlparse(self.path).path
+        if path.startswith("/api/admin/interests/") and self.admin_allowed():
+            try:
+                interest_id = int(path.rsplit("/", 1)[1])
+            except ValueError:
+                return self.send_data({"error": "رقم غير صالح"}, 400)
+            return self.send_data({"deleted": bool(delete_interest(interest_id))})
+        return self.send_data({"error": "غير مصرح"}, 401)
 
     def admin_key(self):
         return os.environ.get("ADMIN_KEY", "change-me")

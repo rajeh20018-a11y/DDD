@@ -1,6 +1,8 @@
 const state = { places: [], scene: 0 };
 const $ = (selector) => document.querySelector(selector);
 const API_BASE = location.port === '5500' ? 'http://127.0.0.1:8772' : '';
+function track(event){fetch(`${API_BASE}/api/analytics`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event,path:location.pathname})}).catch(()=>{})}
+track('site_visit');
 const escapeHTML = (value) => String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 
 async function loadPlaces() {
@@ -19,7 +21,7 @@ async function loadPlaces() {
 }
 function renderPlaces(filter) {
   const items = filter === 'الكل' ? state.places : state.places.filter(p => p.category === filter);
-  $('#places').innerHTML = items.map(p => `<a class="place-card place-link" href="destinations.html"><span class="place-icon">${p.icon}</span><span class="category">${escapeHTML(p.category)}</span><h3>${escapeHTML(p.name)}</h3><p>${escapeHTML(p.description)}</p><div class="place-meta"><span>★ ${p.rating}</span><span>⌖ ${escapeHTML(p.distance)}</span></div><b class="card-link-label">عرض الوجهة ←</b></a>`).join('');
+  $('#places').innerHTML = items.map(p => {const target=p.category==='مطاعم'||p.category==='مقاهٍ'?'restaurants.html':p.category==='فنادق'?'hotels.html':p.category==='فعاليات'?'events.html':'destinations.html';return `<a class="place-card place-link" href="${target}"><span class="place-icon">${p.icon}</span><span class="category">${escapeHTML(p.category)}</span><h3>${escapeHTML(p.name)}</h3><p>${escapeHTML(p.description)}</p><div class="place-meta"><span>★ ${p.rating}</span><span>⌖ ${escapeHTML(p.distance)}</span></div><b class="card-link-label">عرض التفاصيل ←</b></a>`}).join('');
 }
 document.querySelectorAll('.filters button').forEach(button => button.addEventListener('click', () => {
   document.querySelector('.filters .active').classList.remove('active'); button.classList.add('active'); renderPlaces(button.dataset.filter);
@@ -67,10 +69,14 @@ const destinationTargets=[
   'service-detail.html?service=destinations&item=0',
   'service-detail.html?service=destinations&item=1',
   'service-detail.html?service=destinations&item=2',
-  'service-detail.html?service=destinations&item=1'
+  'service-detail.html?service=destinations&item=3'
 ];
 document.querySelectorAll('.destination-card').forEach((card,index)=>card.href=destinationTargets[index]||'destinations.html');
+const heroIcons=['360°','🤖','🗺️','🏨','📍'];document.querySelectorAll('.feature-row strong').forEach((icon,index)=>icon.textContent=heroIcons[index]||icon.textContent);
+document.addEventListener('click',event=>{const target=event.target.closest('a,button');if(!target)return;const href=target.getAttribute('href')||'';if(href.includes('tours-360')||target.closest('#tour'))track('tour_360_click');if(href.includes('trip-planner')||target.closest('#plannerForm'))track('trip_planner_click');if(href.includes('wa.me'))track('whatsapp_click')});
 const interestForm = $('#interestForm');
+if(interestForm)track('interest_form_open');
+if(interestForm&&!interestForm.elements.email){const firstConsent=interestForm.querySelector('.consent');firstConsent.insertAdjacentHTML('beforebegin','<div class="field"><label>البريد الإلكتروني (اختياري)</label><input name="email" type="email"></div><div class="field"><label>الميزانية التقريبية (اختياري)</label><select name="budget"><option value="">غير محددة</option><option>أقل من 2,000 ريال</option><option>2,000–5,000 ريال</option><option>5,000–10,000 ريال</option><option>أكثر من 10,000 ريال</option></select></div><div class="field"><label>ملاحظات إضافية</label><textarea name="notes" rows="3" maxlength="1000"></textarea></div>')}
 if (interestForm) interestForm.addEventListener('submit', async event => {
   event.preventDefault();
   const button = event.currentTarget.querySelector('button[type="submit"]');
@@ -84,8 +90,8 @@ if (interestForm) interestForm.addEventListener('submit', async event => {
     const response = await fetch(`${API_BASE}/api/interests`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'تعذر إكمال التسجيل');
-    message.className = 'form-message success'; message.textContent = result.message; event.currentTarget.reset();
-  } catch (error) { const saved=JSON.parse(localStorage.getItem('asirx_interests')||'[]');saved.push({...payload,created_at:new Date().toISOString()});localStorage.setItem('asirx_interests',JSON.stringify(saved));message.className='form-message success';message.textContent='شكرًا لتسجيل اهتمامك 🌿 تم حفظ بياناتك محليًا في نسخة Live Server.';event.currentTarget.reset(); }
+    message.className = 'form-message success'; message.innerHTML = '<h3>شكرًا لتسجيل اهتمامك في AsirX</h3><p>تم استلام بياناتك بنجاح وسنتواصل معك عند توفر التجربة المناسبة.</p><p><a href="/">العودة للرئيسية</a> · <a href="https://wa.me/966500000000" target="_blank" rel="noopener">التواصل عبر واتساب</a> · <a href="/destinations.html">استكشاف الوجهات</a></p>'; event.currentTarget.reset();
+  } catch (error) { message.className='form-message error';message.textContent=error.message||'تعذر حفظ البيانات. لم يتم تسجيل الطلب؛ حاول مرة أخرى.'; }
   finally { button.disabled = false; button.innerHTML = 'سجّل اهتمامي <span>←</span>'; }
 });
 loadPlaces();

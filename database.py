@@ -1,8 +1,9 @@
 """إنشاء قاعدة SQLite وعمليات البيانات البسيطة للـ MVP."""
+import os
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parent / "db.sqlite3"
+DB_PATH = Path(os.environ.get("DATABASE_PATH", Path(__file__).resolve().parent / "db.sqlite3"))
 
 PLACES = [
     ("قرية رجال ألمع التراثية", "تراثية", "قلب الوجهة وبيوت حجرية ملونة تحكي تاريخ المنطقة.", "وسط القرية", 4.9, "🏛️"),
@@ -16,6 +17,7 @@ PLACES = [
 
 
 def connect():
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
     return connection
@@ -43,7 +45,16 @@ def init_db():
                 marketing_consent INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             );
+            CREATE TABLE IF NOT EXISTS analytics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                event TEXT NOT NULL, path TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            );
         """)
+        columns = {row[1] for row in db.execute("PRAGMA table_info(interests)")}
+        for name, definition in (("budget", "TEXT"), ("notes", "TEXT")):
+            if name not in columns:
+                db.execute(f"ALTER TABLE interests ADD COLUMN {name} {definition}")
         if db.execute("SELECT COUNT(*) FROM places").fetchone()[0] == 0:
             db.executemany("INSERT INTO places(name,category,description,distance,rating,icon) VALUES(?,?,?,?,?,?)", PLACES)
 
@@ -82,13 +93,19 @@ def save_interest(data):
     travelers = data.get("travelers") or None
     if travelers is not None:
         travelers = max(1, min(int(travelers), 30))
+    phone = "".join(char for char in str(data["phone"]) if char.isdigit())
+    if len(phone) < 9:
+        raise ValueError("رقم الجوال غير صالح")
     with connect() as db:
+        if db.execute("SELECT 1 FROM interests WHERE REPLACE(REPLACE(REPLACE(phone,' ',''),'-',''),'+','') = ?", (phone,)).fetchone():
+            raise ValueError("رقم الجوال مسجّل مسبقًا")
         cursor = db.execute("""INSERT INTO interests
-            (name,phone,email,city,destination,experience,travel_date,travelers,privacy_consent,marketing_consent)
-            VALUES(?,?,?,?,?,?,?,?,?,?)""", (
-            str(data["name"]).strip(), str(data["phone"]).strip(), str(data.get("email", "")).strip(),
+            (name,phone,email,city,destination,experience,travel_date,travelers,privacy_consent,marketing_consent,budget,notes)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""", (
+            str(data["name"]).strip(), phone, str(data.get("email", "")).strip(),
             str(data["city"]).strip(), str(data["destination"]).strip(), str(data["experience"]).strip(),
-            data.get("travel_date") or None, travelers, 1, 1 if data.get("marketing_consent") else 0
+            data.get("travel_date") or None, travelers, 1, 1 if data.get("marketing_consent") else 0,
+            str(data.get("budget", "")).strip(), str(data.get("notes", "")).strip()
         ))
         return cursor.lastrowid
 
@@ -96,3 +113,21 @@ def save_interest(data):
 def get_interests():
     with connect() as db:
         return [dict(row) for row in db.execute("SELECT * FROM interests ORDER BY created_at DESC")]
+
+
+def delete_interest(interest_id):
+    with connect() as db:
+        return db.execute("DELETE FROM interests WHERE id = ?", (interest_id,)).rowcount
+
+
+def track_event(event, path=""):
+    allowed = {"site_visit", "tour_360_click", "trip_planner_click", "interest_form_open", "interest_form_complete", "whatsapp_click"}
+    if event not in allowed:
+        raise ValueError("حدث تتبع غير صالح")
+    with connect() as db:
+        db.execute("INSERT INTO analytics(event,path) VALUES(?,?)", (event, str(path)[:300]))
+
+
+def get_analytics():
+    with connect() as db:
+        return [dict(row) for row in db.execute("SELECT event, COUNT(*) AS count FROM analytics GROUP BY event ORDER BY count DESC")]

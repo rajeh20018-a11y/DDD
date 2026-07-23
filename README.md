@@ -17,7 +17,7 @@ python app.py
 - Build Command: `pip install -r requirements.txt`
 - Start Command: `python app.py`
 
-تنبيه: قرص Render الافتراضي مؤقت، لذلك بيانات SQLite الجديدة قد تُفقد عند إعادة النشر. هذا مقبول للاختبار الأولي، ويمكن إضافة Persistent Disk عند الحاجة.
+تنبيه: قرص Render الافتراضي مؤقت، لذلك بيانات SQLite الجديدة قد تُفقد عند إعادة النشر. للإطلاق الفعلي أضف Persistent Disk (مثل `/var/data`) واضبط متغير البيئة `DATABASE_PATH=/var/data/asirx.sqlite3`.
 
 ## تسجيلات العملاء ولوحة الإدارة
 
