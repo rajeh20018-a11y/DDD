@@ -96,3 +96,6 @@ if (interestForm) interestForm.addEventListener('submit', async event => {
   finally { button.disabled = false; button.innerHTML = 'سجّل اهتمامي <span>←</span>'; }
 });
 loadPlaces();
+const GOOGLE_FORM_URL='https://forms.gle/vJ3nJFnvLNcK2ARDA';
+const THANK_YOU_MESSAGE='شكرًا لتسجيلك في منصة AsirX 🌿\nتم استلام بياناتك بنجاح وسنتواصل معك قريبًا\nنتمنى لك تجربة سياحية جميلة في منطقة عسير';
+document.addEventListener('click',event=>{const control=event.target.closest('a,button');if(!control||!(/سجّل اهتمام|مهتم بهذه التجربة/.test(control.textContent)))return;event.preventDefault();window.open(GOOGLE_FORM_URL,'_blank','noopener');setTimeout(()=>alert(THANK_YOU_MESSAGE),150)},true);

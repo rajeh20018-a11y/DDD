@@ -61,6 +61,7 @@ def render_section(slug):
     values = {"{{ICON}}": icon, "{{TITLE}}": title, "{{SUBTITLE}}": subtitle, "{{DESCRIPTION}}": description}
     for key, value in values.items():
         page = page.replace(key, value)
+    page = page.replace('href="/#interest"', 'href="https://forms.gle/vJ3nJFnvLNcK2ARDA" target="_blank" rel="noopener"')
     return page.encode("utf-8")
 
 
@@ -73,6 +74,7 @@ def render_service_detail(service, item_slug):
     parent_title = SERVICE_TITLES.get(service, service.replace("-", " "))
     for key, value in {"{{TITLE}}": title, "{{CATEGORY}}": category, "{{DESCRIPTION}}": description, "{{SERVICE}}": service, "{{PARENT}}": parent_title}.items():
         page = page.replace(key, value)
+    page = page.replace('href="/interest/"', 'href="https://forms.gle/vJ3nJFnvLNcK2ARDA" target="_blank" rel="noopener"')
     return page.encode("utf-8")
 
 
