@@ -2,6 +2,7 @@ const state = { places: [], scene: 0 };
 const $ = (selector) => document.querySelector(selector);
 document.querySelectorAll('input[name="email"]').forEach(input=>input.closest('label,.field')?.remove());
 const API_BASE = location.port === '5500' ? 'http://127.0.0.1:8772' : '';
+document.querySelectorAll('a[href="#planner"]').forEach(link=>link.href='/trip-planner.html');
 function track(event){fetch(`${API_BASE}/api/analytics`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event,path:location.pathname})}).catch(()=>{})}
 track('site_visit');
 const escapeHTML = (value) => String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
