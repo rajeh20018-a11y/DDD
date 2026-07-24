@@ -96,6 +96,7 @@ if (interestForm) interestForm.addEventListener('submit', async event => {
   finally { button.disabled = false; button.innerHTML = 'سجّل اهتمامي <span>←</span>'; }
 });
 loadPlaces();
-const GOOGLE_FORM_URL='https://forms.gle/vJ3nJFnvLNcK2ARDA';
-const THANK_YOU_MESSAGE='شكرًا لتسجيلك في منصة AsirX 🌿\nتم استلام بياناتك بنجاح وسنتواصل معك قريبًا\nنتمنى لك تجربة سياحية جميلة في منطقة عسير';
+const GOOGLE_FORM_URL='https://forms.gle/pByYj499KTFH3RXy8';
+const THANK_YOU_MESSAGE='تم استلام بياناتك بنجاح وسنتواصل معك قريبًا\nنتمنى لك تجربة سياحية جميلة في منطقة عسير';
 document.addEventListener('click',event=>{const control=event.target.closest('a,button');if(!control||!(/سجّل اهتمام|مهتم بهذه التجربة/.test(control.textContent)))return;event.preventDefault();window.open(GOOGLE_FORM_URL,'_blank','noopener');setTimeout(()=>alert(THANK_YOU_MESSAGE),150)},true);
+if(interestForm){const googleCta=document.createElement('div');googleCta.className='interest-form google-form-cta';googleCta.innerHTML='<h3>نموذج تسجيل الاهتمام</h3><p>اضغط الزر التالي وأكمل بياناتك في نموذج AsirX الرسمي.</p><a class="button primary wide" href="https://forms.gle/pByYj499KTFH3RXy8" target="_blank" rel="noopener">سجّل اهتمامك <span>←</span></a>';interestForm.replaceWith(googleCta)}
