@@ -47,7 +47,7 @@ def init_db():
             );
             CREATE TABLE IF NOT EXISTS analytics (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                event TEXT NOT NULL, path TEXT,
+                event TEXT NOT NULL, path TEXT, visitor_id TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             );
         """)
@@ -55,6 +55,9 @@ def init_db():
         for name, definition in (("budget", "TEXT"), ("notes", "TEXT")):
             if name not in columns:
                 db.execute(f"ALTER TABLE interests ADD COLUMN {name} {definition}")
+        analytics_columns = {row[1] for row in db.execute("PRAGMA table_info(analytics)")}
+        if "visitor_id" not in analytics_columns:
+            db.execute("ALTER TABLE analytics ADD COLUMN visitor_id TEXT")
         if db.execute("SELECT COUNT(*) FROM places").fetchone()[0] == 0:
             db.executemany("INSERT INTO places(name,category,description,distance,rating,icon) VALUES(?,?,?,?,?,?)", PLACES)
 
@@ -120,12 +123,12 @@ def delete_interest(interest_id):
         return db.execute("DELETE FROM interests WHERE id = ?", (interest_id,)).rowcount
 
 
-def track_event(event, path=""):
+def track_event(event, path="", visitor_id=""):
     allowed = {"site_visit", "tour_360_click", "trip_planner_click", "interest_form_open", "interest_form_complete", "whatsapp_click"}
     if event not in allowed:
         raise ValueError("حدث تتبع غير صالح")
     with connect() as db:
-        db.execute("INSERT INTO analytics(event,path) VALUES(?,?)", (event, str(path)[:300]))
+        db.execute("INSERT INTO analytics(event,path,visitor_id) VALUES(?,?,?)", (event, str(path)[:300], str(visitor_id)[:100]))
 
 
 def get_analytics():
@@ -149,7 +152,9 @@ def get_dashboard_summary():
         totals = {
             "interests": db.execute("SELECT COUNT(*) FROM interests").fetchone()[0],
             "messages": db.execute("SELECT COUNT(*) FROM messages").fetchone()[0],
-            "visits": db.execute("SELECT COUNT(*) FROM analytics WHERE event = 'site_visit'").fetchone()[0],
+            "visits": db.execute("""SELECT COUNT(DISTINCT CASE
+                WHEN visitor_id IS NOT NULL AND visitor_id != '' THEN visitor_id
+                ELSE 'legacy-' || id END) FROM analytics WHERE event = 'site_visit'""").fetchone()[0],
             "plans": db.execute("SELECT COUNT(*) FROM analytics WHERE event = 'trip_planner_click'").fetchone()[0],
         }
         daily = [dict(row) for row in db.execute("""
@@ -162,4 +167,13 @@ def get_dashboard_summary():
             SELECT experience AS label, COUNT(*) AS count
             FROM interests GROUP BY experience ORDER BY count DESC
         """)]
-        return {"totals": totals, "daily": daily, "experiences": experiences}
+        destinations = [dict(row) for row in db.execute("""
+            SELECT destination AS label, COUNT(*) AS count FROM interests
+            GROUP BY destination ORDER BY count DESC LIMIT 8
+        """)]
+        cities = [dict(row) for row in db.execute("""
+            SELECT city AS label, COUNT(*) AS count FROM interests
+            GROUP BY city ORDER BY count DESC LIMIT 8
+        """)]
+        return {"totals": totals, "daily": daily, "experiences": experiences,
+                "destinations": destinations, "cities": cities}

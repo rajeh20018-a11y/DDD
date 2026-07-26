@@ -3,7 +3,8 @@ const $ = (selector) => document.querySelector(selector);
 document.querySelectorAll('input[name="email"]').forEach(input=>input.closest('label,.field')?.remove());
 const API_BASE = location.port === '5500' ? 'http://127.0.0.1:8772' : '';
 document.querySelectorAll('a[href="#planner"]').forEach(link=>link.href='/trip-planner.html');
-function track(event){fetch(`${API_BASE}/api/analytics`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event,path:location.pathname})}).catch(()=>{})}
+const VISITOR_ID=sessionStorage.getItem('asirx_visitor_id')||`${Date.now()}-${Math.random().toString(36).slice(2)}`;sessionStorage.setItem('asirx_visitor_id',VISITOR_ID);
+function track(event){if(event==='site_visit'&&sessionStorage.getItem('asirx_visit_counted'))return;fetch(`${API_BASE}/api/analytics`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event,path:location.pathname,visitor_id:VISITOR_ID})}).then(()=>{if(event==='site_visit')sessionStorage.setItem('asirx_visit_counted','1')}).catch(()=>{})}
 track('site_visit');
 const escapeHTML = (value) => String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const WHATSAPP_NUMBER = '966509950704';
@@ -90,6 +91,7 @@ if (interestForm) interestForm.addEventListener('submit', async event => {
   const payload = Object.fromEntries(form.entries());
   payload.privacy_consent = form.has('privacy_consent');
   payload.marketing_consent = form.has('marketing_consent');
+  payload.path = location.pathname; payload.visitor_id = VISITOR_ID;
   button.disabled = true; button.textContent = 'جارٍ التسجيل…'; message.className = 'form-message'; message.textContent = '';
   try {
     const response = await fetch(`${API_BASE}/api/interests`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});

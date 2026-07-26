@@ -181,10 +181,10 @@ class AppHandler(BaseHTTPRequestHandler):
                 return self.send_data({"message": "وصلت رسالتك، سنتواصل معك قريبًا."}, 201)
             if path == "/api/interests":
                 interest_id = save_interest(payload)
-                track_event("interest_form_complete", payload.get("path", ""))
+                track_event("interest_form_complete", payload.get("path", ""), payload.get("visitor_id", ""))
                 return self.send_data({"id": interest_id, "message": "شكرًا لتسجيل اهتمامك في منصة عسير AsirX\n\nتم استلام بياناتك بنجاح وسيتم التواصل معك قريبًا لتزويدك بالتفاصيل\n\nنسعد بخدمتك ونتمنى لك تجربة سياحية مميزة في عسير"}, 201)
             if path == "/api/analytics":
-                track_event(payload.get("event", ""), payload.get("path", ""))
+                track_event(payload.get("event", ""), payload.get("path", ""), payload.get("visitor_id", ""))
                 return self.send_data({"ok": True}, 201)
         except (ValueError, json.JSONDecodeError) as exc:
             return self.send_data({"error": "بيانات الطلب غير صالحة", "detail": str(exc)}, 400)
@@ -210,7 +210,7 @@ class AppHandler(BaseHTTPRequestHandler):
         return os.environ.get("ADMIN_PASSWORD", os.environ.get("ADMIN_KEY", "Rr@11223344"))
 
     def admin_username(self):
-        return os.environ.get("ADMIN_USERNAME", "Rr@11223344")
+        return os.environ.get("ADMIN_USERNAME", "rajeh")
 
     def admin_allowed(self):
         from urllib.parse import parse_qs

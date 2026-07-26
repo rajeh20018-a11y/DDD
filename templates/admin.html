@@ -6,6 +6,7 @@
   <meta name="robots" content="noindex,nofollow">
   <title>لوحة تحكم AsirX</title>
   <link rel="stylesheet" href="/static/css/admin.css">
+  <link rel="stylesheet" href="/static/css/password-toggle.css">
 </head>
 <body>
   <section class="login" id="loginView">
@@ -15,7 +16,7 @@
       <h1>مرحبًا بعودتك</h1>
       <p>أدخل مفتاح الإدارة للوصول إلى بيانات المشروع.</p>
       <label>اسم المستخدم<input id="adminUsername" autocomplete="username" required placeholder="اسم المستخدم"></label>
-      <label>كلمة المرور<input id="adminPassword" type="password" autocomplete="current-password" required placeholder="••••••••"></label>
+      <label>كلمة المرور<div class="password-field"><input id="adminPassword" type="password" autocomplete="current-password" required placeholder="••••••••"><button id="togglePassword" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false">👁</button></div></label>
       <button type="submit">دخول إلى لوحة التحكم</button>
       <small id="loginError" role="alert"></small>
       <a href="/">العودة إلى الموقع</a>
@@ -60,6 +61,7 @@
       </section>
 
       <section class="tab" id="analytics">
+        <div class="overview-grid" id="interestBreakdowns"></div>
         <article class="panel"><div class="panel-head"><div><span>أحداث الواجهة</span><h2>تحليلات الاستخدام</h2></div></div><div class="analytics-list" id="analyticsList"></div></article>
       </section>
       <div class="toast" id="adminToast"></div>
