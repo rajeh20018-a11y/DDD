@@ -5,12 +5,14 @@ import os
 import csv
 import io
 import html
+import hmac
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
 from database import (get_places, create_plan, save_message, save_interest,
-                      get_interests, delete_interest, track_event, get_analytics, init_db)
+                      get_interests, delete_interest, track_event, get_analytics, init_db,
+                      get_messages, delete_message, get_dashboard_summary)
 
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATES_DIR = BASE_DIR / "templates"
@@ -61,7 +63,7 @@ def render_section(slug):
     values = {"{{ICON}}": icon, "{{TITLE}}": title, "{{SUBTITLE}}": subtitle, "{{DESCRIPTION}}": description}
     for key, value in values.items():
         page = page.replace(key, value)
-    page = page.replace('href="/#interest"', 'href="https://forms.gle/M2N8xadpQFZzxAkP7" target="_blank" rel="noopener"')
+    page = page.replace('href="/#interest"', 'href="/interest.html"')
     return page.encode("utf-8")
 
 
@@ -74,7 +76,7 @@ def render_service_detail(service, item_slug):
     parent_title = SERVICE_TITLES.get(service, service.replace("-", " "))
     for key, value in {"{{TITLE}}": title, "{{CATEGORY}}": category, "{{DESCRIPTION}}": description, "{{SERVICE}}": service, "{{PARENT}}": parent_title}.items():
         page = page.replace(key, value)
-    page = page.replace('href="/interest/"', 'href="https://forms.gle/M2N8xadpQFZzxAkP7" target="_blank" rel="noopener"')
+    page = page.replace('href="/interest/"', 'href="/interest.html"')
     return page.encode("utf-8")
 
 
@@ -119,7 +121,23 @@ class AppHandler(BaseHTTPRequestHandler):
             return self.send_data(render_section(slug), content_type="text/html; charset=utf-8")
         if path == "/api/places":
             return self.send_data({"places": get_places()})
-        if path == "/admin/interests":
+        if path in ("/ddd", "/ddd/"):
+            return self.send_data((TEMPLATES_DIR / "admin.html").read_bytes(), content_type="text/html; charset=utf-8")
+        if path in ("/admin", "/admin/", "/admin/interests"):
+            self.send_response(302)
+            self.send_header("Location", "/ddd")
+            self.end_headers()
+            return
+        if path == "/api/admin/dashboard":
+            if not self.admin_allowed():
+                return self.send_data({"error": "غير مصرح"}, 401)
+            return self.send_data({
+                "summary": get_dashboard_summary(),
+                "interests": get_interests(),
+                "messages": get_messages(),
+                "analytics": get_analytics(),
+            })
+        if path == "/admin/interests-legacy":
             if not self.admin_allowed():
                 return self.send_data({"error": "غير مصرح"}, 401)
             rows = get_interests()
@@ -164,7 +182,7 @@ class AppHandler(BaseHTTPRequestHandler):
             if path == "/api/interests":
                 interest_id = save_interest(payload)
                 track_event("interest_form_complete", payload.get("path", ""))
-                return self.send_data({"id": interest_id, "message": "شكرًا لتسجيل اهتمامك 🌿 تم استلام بياناتك وسنتواصل معك عند إطلاق التجربة والعروض المناسبة."}, 201)
+                return self.send_data({"id": interest_id, "message": "شكرًا لتسجيل اهتمامك في منصة عسير AsirX\n\nتم استلام بياناتك بنجاح وسيتم التواصل معك قريبًا لتزويدك بالتفاصيل\n\nنسعد بخدمتك ونتمنى لك تجربة سياحية مميزة في عسير"}, 201)
             if path == "/api/analytics":
                 track_event(payload.get("event", ""), payload.get("path", ""))
                 return self.send_data({"ok": True}, 201)
@@ -180,15 +198,27 @@ class AppHandler(BaseHTTPRequestHandler):
             except ValueError:
                 return self.send_data({"error": "رقم غير صالح"}, 400)
             return self.send_data({"deleted": bool(delete_interest(interest_id))})
+        if path.startswith("/api/admin/messages/") and self.admin_allowed():
+            try:
+                message_id = int(path.rsplit("/", 1)[1])
+            except ValueError:
+                return self.send_data({"error": "رقم غير صالح"}, 400)
+            return self.send_data({"deleted": bool(delete_message(message_id))})
         return self.send_data({"error": "غير مصرح"}, 401)
 
     def admin_key(self):
-        return os.environ.get("ADMIN_KEY", "change-me")
+        return os.environ.get("ADMIN_PASSWORD", os.environ.get("ADMIN_KEY", "Rr@11223344"))
+
+    def admin_username(self):
+        return os.environ.get("ADMIN_USERNAME", "Rr@11223344")
 
     def admin_allowed(self):
         from urllib.parse import parse_qs
         query = parse_qs(urlparse(self.path).query)
-        return query.get("key", [""])[0] == self.admin_key()
+        username = self.headers.get("X-Admin-Username") or query.get("username", [""])[0]
+        password = self.headers.get("X-Admin-Password") or query.get("key", [""])[0]
+        return (hmac.compare_digest(username, self.admin_username()) and
+                hmac.compare_digest(password, self.admin_key()))
 
     def log_message(self, fmt, *args):
         print(f"[{self.log_date_time_string()}] {fmt % args}")

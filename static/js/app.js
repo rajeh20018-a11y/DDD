@@ -6,6 +6,9 @@ document.querySelectorAll('a[href="#planner"]').forEach(link=>link.href='/trip-p
 function track(event){fetch(`${API_BASE}/api/analytics`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event,path:location.pathname})}).catch(()=>{})}
 track('site_visit');
 const escapeHTML = (value) => String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+const WHATSAPP_NUMBER = '966509950704';
+const THANK_YOU_MESSAGE = 'شكرًا لتسجيل اهتمامك في منصة عسير AsirX\n\nتم استلام بياناتك بنجاح وسيتم التواصل معك قريبًا لتزويدك بالتفاصيل\n\nنسعد بخدمتك ونتمنى لك تجربة سياحية مميزة في عسير';
+const buildWhatsAppLink = (text = THANK_YOU_MESSAGE) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
 
 async function loadPlaces() {
   try {
@@ -92,12 +95,8 @@ if (interestForm) interestForm.addEventListener('submit', async event => {
     const response = await fetch(`${API_BASE}/api/interests`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'تعذر إكمال التسجيل');
-    message.className = 'form-message success'; message.innerHTML = '<h3>شكرًا لتسجيل اهتمامك في AsirX</h3><p>تم استلام بياناتك بنجاح وسنتواصل معك عند توفر التجربة المناسبة.</p><p><a href="/">العودة للرئيسية</a> · <a href="https://wa.me/966500000000" target="_blank" rel="noopener">التواصل عبر واتساب</a> · <a href="/destinations.html">استكشاف الوجهات</a></p>'; event.currentTarget.reset();
+    message.className = 'form-message success'; message.innerHTML = `<h3>شكرًا لتسجيل اهتمامك في AsirX</h3><p>${THANK_YOU_MESSAGE.replace(/\n/g, '<br>')}</p><p><a href="/">العودة للرئيسية</a> · <a href="${buildWhatsAppLink()}" target="_blank" rel="noopener">التواصل عبر واتساب</a> · <a href="/destinations.html">استكشاف الوجهات</a></p>`; event.currentTarget.reset();
   } catch (error) { message.className='form-message error';message.textContent=error.message||'تعذر حفظ البيانات. لم يتم تسجيل الطلب؛ حاول مرة أخرى.'; }
   finally { button.disabled = false; button.innerHTML = 'سجّل اهتمامي <span>←</span>'; }
 });
 loadPlaces();
-const GOOGLE_FORM_URL='https://forms.gle/M2N8xadpQFZzxAkP7';
-const THANK_YOU_MESSAGE='تم استلام بياناتك بنجاح، وسنتواصل معك عند إطلاق التجربة والعروض السياحية المناسبة لك';
-document.addEventListener('click',event=>{const control=event.target.closest('a,button');if(!control||!(/سجّل اهتمام|مهتم بهذه التجربة/.test(control.textContent)))return;event.preventDefault();window.open(GOOGLE_FORM_URL,'_blank','noopener');setTimeout(()=>alert(THANK_YOU_MESSAGE),150)},true);
-if(interestForm){const googleCta=document.createElement('div');googleCta.className='interest-form google-form-cta';googleCta.innerHTML='<h3>نموذج تسجيل الاهتمام</h3><p>اضغط الزر التالي وأكمل بياناتك في نموذج AsirX الرسمي.</p><a class="button primary wide" href="https://forms.gle/M2N8xadpQFZzxAkP7" target="_blank" rel="noopener">سجّل اهتمامك <span>←</span></a>';interestForm.replaceWith(googleCta)}

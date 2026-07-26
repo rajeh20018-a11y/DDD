@@ -131,3 +131,35 @@ def track_event(event, path=""):
 def get_analytics():
     with connect() as db:
         return [dict(row) for row in db.execute("SELECT event, COUNT(*) AS count FROM analytics GROUP BY event ORDER BY count DESC")]
+
+
+def get_messages():
+    with connect() as db:
+        return [dict(row) for row in db.execute("SELECT * FROM messages ORDER BY created_at DESC")]
+
+
+def delete_message(message_id):
+    with connect() as db:
+        return db.execute("DELETE FROM messages WHERE id = ?", (message_id,)).rowcount
+
+
+def get_dashboard_summary():
+    """Return the small aggregate dataset needed by the admin dashboard."""
+    with connect() as db:
+        totals = {
+            "interests": db.execute("SELECT COUNT(*) FROM interests").fetchone()[0],
+            "messages": db.execute("SELECT COUNT(*) FROM messages").fetchone()[0],
+            "visits": db.execute("SELECT COUNT(*) FROM analytics WHERE event = 'site_visit'").fetchone()[0],
+            "plans": db.execute("SELECT COUNT(*) FROM analytics WHERE event = 'trip_planner_click'").fetchone()[0],
+        }
+        daily = [dict(row) for row in db.execute("""
+            SELECT date(created_at) AS day, COUNT(*) AS count
+            FROM interests
+            WHERE created_at >= datetime('now', '-6 days')
+            GROUP BY date(created_at) ORDER BY day
+        """)]
+        experiences = [dict(row) for row in db.execute("""
+            SELECT experience AS label, COUNT(*) AS count
+            FROM interests GROUP BY experience ORDER BY count DESC
+        """)]
+        return {"totals": totals, "daily": daily, "experiences": experiences}

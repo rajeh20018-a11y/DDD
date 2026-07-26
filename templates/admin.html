@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>لوحة تحكم AsirX</title>
+  <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+  <section class="login" id="loginView">
+    <form id="loginForm" class="login-card">
+      <div class="brand">Asir<b>X</b></div>
+      <span class="badge">منطقة الإدارة</span>
+      <h1>مرحبًا بعودتك</h1>
+      <p>أدخل مفتاح الإدارة للوصول إلى بيانات المشروع.</p>
+      <label>اسم المستخدم<input id="adminUsername" autocomplete="username" required placeholder="اسم المستخدم"></label>
+      <label>كلمة المرور<input id="adminPassword" type="password" autocomplete="current-password" required placeholder="••••••••"></label>
+      <button type="submit">دخول إلى لوحة التحكم</button>
+      <small id="loginError" role="alert"></small>
+      <a href="/">العودة إلى الموقع</a>
+    </form>
+  </section>
+
+  <div class="dashboard" id="dashboardView" hidden>
+    <aside>
+      <div class="brand">Asir<b>X</b></div>
+      <nav>
+        <button class="active" data-tab="overview"><i>⌂</i> نظرة عامة</button>
+        <button data-tab="interests"><i>♙</i> العملاء المهتمون <em id="leadBadge">0</em></button>
+        <button data-tab="messages"><i>✉</i> الرسائل <em id="messageBadge">0</em></button>
+        <button data-tab="analytics"><i>↗</i> التحليلات</button>
+      </nav>
+      <a class="site-link" href="/" target="_blank">عرض الموقع ↗</a>
+      <button class="logout" id="logout">تسجيل الخروج</button>
+    </aside>
+    <main>
+      <header><div><span>لوحة الإدارة</span><h1 id="pageTitle">نظرة عامة</h1></div><button class="refresh" id="refresh">تحديث البيانات ↻</button></header>
+
+      <section class="tab active" id="overview">
+        <div class="metrics">
+          <article><span>إجمالي المهتمين</span><strong id="totalInterests">0</strong><small>طلبات محفوظة في القاعدة</small></article>
+          <article><span>زيارات الموقع</span><strong id="totalVisits">0</strong><small>جميع الزيارات المسجلة</small></article>
+          <article><span>الرسائل</span><strong id="totalMessages">0</strong><small>رسائل نموذج التواصل</small></article>
+          <article><span>طلبات التخطيط</span><strong id="totalPlans">0</strong><small>تفاعل مع مخطط الرحلة</small></article>
+        </div>
+        <div class="overview-grid">
+          <article class="panel"><div class="panel-head"><div><span>آخر 7 أيام</span><h2>تسجيلات الاهتمام</h2></div></div><div class="chart" id="dailyChart"></div></article>
+          <article class="panel"><div class="panel-head"><div><span>توزيع الطلبات</span><h2>التجارب المطلوبة</h2></div></div><div class="donut-wrap"><div class="donut" id="experienceDonut"><b>0</b><span>طلب</span></div><div class="legend" id="experienceLegend"></div></div></article>
+        </div>
+        <article class="panel"><div class="panel-head"><div><span>الأحدث</span><h2>آخر العملاء المهتمين</h2></div><button data-open-tab="interests">عرض الكل ←</button></div><div class="table-wrap"><table><thead><tr><th>العميل</th><th>الخدمة</th><th>الوجهة</th><th>التاريخ</th></tr></thead><tbody id="recentRows"></tbody></table></div></article>
+      </section>
+
+      <section class="tab" id="interests">
+        <article class="panel"><div class="panel-head controls"><div><span>قاعدة بيانات العملاء</span><h2>العملاء المهتمون</h2></div><div><input id="leadSearch" type="search" placeholder="بحث بالاسم أو الجوال…"><select id="experienceFilter"><option value="">كل الخدمات</option></select><a id="exportCsv">تصدير CSV ↓</a></div></div><div class="table-wrap"><table><thead><tr><th>العميل</th><th>الجوال</th><th>المدينة</th><th>الخدمة</th><th>الوجهة</th><th>السفر</th><th></th></tr></thead><tbody id="interestRows"></tbody></table></div></article>
+      </section>
+
+      <section class="tab" id="messages">
+        <article class="panel"><div class="panel-head"><div><span>صندوق الوارد</span><h2>رسائل التواصل</h2></div></div><div class="message-list" id="messageList"></div></article>
+      </section>
+
+      <section class="tab" id="analytics">
+        <article class="panel"><div class="panel-head"><div><span>أحداث الواجهة</span><h2>تحليلات الاستخدام</h2></div></div><div class="analytics-list" id="analyticsList"></div></article>
+      </section>
+      <div class="toast" id="adminToast"></div>
+    </main>
+  </div>
+  <script src="/static/js/admin.js"></script>
+</body></html>
