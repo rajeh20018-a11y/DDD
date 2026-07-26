@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: asirx
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    healthCheckPath: /api/places
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.5
+      - key: ADMIN_USERNAME
+        value: rajeh
+      - key: ADMIN_PASSWORD
+        sync: false

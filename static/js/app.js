@@ -10,6 +10,7 @@ const escapeHTML = (value) => String(value).replace(/[&<>'"]/g, c => ({'&':'&amp
 const WHATSAPP_NUMBER = '966509950704';
 const THANK_YOU_MESSAGE = 'شكرًا لتسجيل اهتمامك في منصة عسير AsirX\n\nتم استلام بياناتك بنجاح وسيتم التواصل معك قريبًا لتزويدك بالتفاصيل\n\nنسعد بخدمتك ونتمنى لك تجربة سياحية مميزة في عسير';
 const buildWhatsAppLink = (text = THANK_YOU_MESSAGE) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+async function readApiResponse(response){const text=await response.text();if(!text)throw new Error('خادم الحفظ غير متاح. يرجى تشغيل المشروع كخدمة Web Service.');try{return JSON.parse(text)}catch{throw new Error('تعذر الاتصال بخادم الحفظ. حاول مرة أخرى لاحقًا.')}}
 
 async function loadPlaces() {
   try {
@@ -95,7 +96,7 @@ if (interestForm) interestForm.addEventListener('submit', async event => {
   button.disabled = true; button.textContent = 'جارٍ التسجيل…'; message.className = 'form-message'; message.textContent = '';
   try {
     const response = await fetch(`${API_BASE}/api/interests`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
-    const result = await response.json();
+    const result = await readApiResponse(response);
     if (!response.ok) throw new Error(result.error || 'تعذر إكمال التسجيل');
     message.className = 'form-message success'; message.innerHTML = `<h3>شكرًا لتسجيل اهتمامك في AsirX</h3><p>${THANK_YOU_MESSAGE.replace(/\n/g, '<br>')}</p><p><a href="/">العودة للرئيسية</a> · <a href="${buildWhatsAppLink()}" target="_blank" rel="noopener">التواصل عبر واتساب</a> · <a href="/destinations.html">استكشاف الوجهات</a></p>`; event.currentTarget.reset();
   } catch (error) { message.className='form-message error';message.textContent=error.message||'تعذر حفظ البيانات. لم يتم تسجيل الطلب؛ حاول مرة أخرى.'; }
