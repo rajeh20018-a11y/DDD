@@ -1,3 +1,10 @@
+const welcomeStyles=document.createElement('link');welcomeStyles.rel='stylesheet';welcomeStyles.href='/static/css/welcome.css';document.head.appendChild(welcomeStyles);
+if(!sessionStorage.getItem('asirx_welcome_seen')){
+  document.body.insertAdjacentHTML('afterbegin','<div class="welcome-video" id="welcomeVideo" role="dialog" aria-modal="true" aria-label="فيديو ترحيبي"><button class="welcome-skip" id="welcomeSkip" type="button">تخطي المقدمة ×</button><div class="welcome-scene" aria-hidden="true"><i></i><i></i><i></i></div><div class="welcome-content"><div class="welcome-mark"><span>Asir</span><b>X</b></div><p>مرحبًا بك في عسير</p><h1>اكتشف جمال المكان<br>قبل أن تبدأ الرحلة</h1><button class="welcome-enter" id="welcomeEnter" type="button">ابدأ الاستكشاف ←</button></div><div class="welcome-progress"><span></span></div></div>');
+  const welcome=document.querySelector('#welcomeVideo');document.body.style.overflow='hidden';
+  const closeWelcome=()=>{if(!welcome||welcome.classList.contains('is-closing'))return;sessionStorage.setItem('asirx_welcome_seen','1');welcome.classList.add('is-closing');document.body.style.overflow='';setTimeout(()=>welcome.remove(),700)};
+  document.querySelector('#welcomeSkip').onclick=closeWelcome;document.querySelector('#welcomeEnter').onclick=closeWelcome;document.addEventListener('keydown',event=>{if(event.key==='Escape')closeWelcome()},{once:true});setTimeout(closeWelcome,8000);
+}
 const state = { places: [], scene: 0 };
 const $ = (selector) => document.querySelector(selector);
 document.querySelectorAll('input[name="email"]').forEach(input=>input.closest('label,.field')?.remove());
