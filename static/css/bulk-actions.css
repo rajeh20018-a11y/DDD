@@ -1,0 +1,3 @@
+.controls .bulk-delete{border:1px solid #e6b5b0;background:#fff3f1;color:#9b3028;padding:9px 13px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.controls .bulk-delete:disabled{opacity:.45;cursor:not-allowed}
+.interest-check,#selectAllInterests{width:17px;height:17px;accent-color:#245d4e;cursor:pointer}

@@ -123,6 +123,16 @@ def delete_interest(interest_id):
         return db.execute("DELETE FROM interests WHERE id = ?", (interest_id,)).rowcount
 
 
+def delete_interests(interest_ids):
+    """Delete only the explicitly selected interest records."""
+    ids = [int(value) for value in interest_ids]
+    if not ids:
+        return 0
+    placeholders = ",".join("?" for _ in ids)
+    with connect() as db:
+        return db.execute(f"DELETE FROM interests WHERE id IN ({placeholders})", ids).rowcount
+
+
 def track_event(event, path="", visitor_id=""):
     allowed = {"site_visit", "tour_360_click", "trip_planner_click", "interest_form_open", "interest_form_complete", "whatsapp_click"}
     if event not in allowed:

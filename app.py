@@ -11,7 +11,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from database import (get_places, create_plan, save_message, save_interest,
-                      get_interests, delete_interest, track_event, get_analytics, init_db,
+                      get_interests, delete_interest, delete_interests, track_event, get_analytics, init_db,
                       get_messages, delete_message, get_dashboard_summary)
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -192,6 +192,17 @@ class AppHandler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         path = urlparse(self.path).path
+        if path == "/api/admin/interests" and self.admin_allowed():
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                payload = json.loads(self.rfile.read(length) or b"{}")
+                ids = payload.get("ids", [])
+                if not isinstance(ids, list) or len(ids) > 1000:
+                    raise ValueError("قائمة السجلات غير صالحة")
+                deleted = delete_interests(ids)
+                return self.send_data({"deleted": deleted})
+            except (ValueError, json.JSONDecodeError) as exc:
+                return self.send_data({"error": str(exc)}, 400)
         if path.startswith("/api/admin/interests/") and self.admin_allowed():
             try:
                 interest_id = int(path.rsplit("/", 1)[1])
